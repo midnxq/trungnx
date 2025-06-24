@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Quay số trúng thưởng - Trung tâm QLTM HCM</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background: linear-gradient(to right, #f8f9fa, #e9ecef);
+      margin: 0;
+      padding: 0;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 20px;
+      border-bottom: 1px solid #ccc;
+	  color: #005993;
+      background: white;
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+    }
+    header img { height: 40px; }
+    .mainContainer {
+      display: flex;
+      height: calc(100vh - 60px);
+    }
+    .leftPanel {
+      flex: 2;
+      padding: 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+    .rightPanel {
+      flex: 1;
+      border-left: 1px solid #ccc;
+      padding: 10px;
+      overflow-y: auto;
+      background: #fff;
+      font-size: 0.9em;
+    }
+    h1 {
+      color: #d62828;
+      margin-top: 10px;
+      font-size: 1.8em;
+    }
+    #uploadSection { margin: 20px auto; font-size: 1em; text-align: center; }
+    #luckyNumber {
+      display: grid;
+      grid-template-columns: repeat(8, 50px);
+      justify-content: center;
+      gap: 10px;
+      font-size: 2em;
+      margin: 20px 0;
+    }
+    .digitBox {
+      border: 2px solid #003366;
+      padding: 10px;
+      border-radius: 10px;
+      background: #fff;
+      width: 50px;
+      height: 55px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: 0.3s;
+      color: #003366;
+    }
+    .spinning {
+      color: #007bff;
+      animation: pulse 0.5s infinite;
+    }
+    .final {
+      color: #d62828;
+      font-weight: bold;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    #nameDisplay {
+      font-size: 1.1em;
+      font-weight: bold;
+      margin-top: 10px;
+      color: #003366;
+      min-height: 30px;
+      text-align: center;
+    }
+    #statusBar {
+      margin-top: 10px;
+      font-size: 1em;
+      color: #003366;
+      font-weight: bold;
+      text-align: center;
+    }
+    .controls {
+      margin-top: 20px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+    }
+    #buttonGroup, #secondaryButtons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 1em;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background-color: #007bff;
+      color: #fff;
+      transition: background 0.3s;
+    }
+    button:hover { background-color: #0056b3; }
+    #resetBtn { background: #6c757d; }
+    .resultGroup {
+      margin-bottom: 20px;
+    }
+    .resultGroup h2 {
+      margin: 10px 0 5px;
+      font-size: 1.1em;
+      color: #d62828;
+    }
+    .resultGroup table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.9em;
+    }
+    .resultGroup th, .resultGroup td {
+      padding: 6px 8px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    .resultGroup tbody tr:nth-child(odd) {
+      background: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h3>Trung tâm Quản Lý Tiền Mặt Hồ Chí Minh</h3>
+    <img src="https://contact.vietinbank.vn/_next/static/media/LogoVietinBank.95dcc2eb.svg" alt="Logo" />
+  </header>
+  <div class="mainContainer">
+    <div class="leftPanel">
+      <h1>QUAY SỐ TRÚNG THƯỞNG</h1>
+      <div id="uploadSection">
+        <input type="file" id="uploadFile" accept=".xlsx,.csv" />
+        <div>Tải lên file Excel có cột \"Mã số nhân viên\" và \"Họ tên\"</div>
+      </div>
+      <div id="mainInterface" style="display:none;">
+        <div id="statusBar"></div>
+        <div id="luckyNumber">
+          <div class="digitBox" id="d0">_</div>
+          <div class="digitBox" id="d1">_</div>
+          <div class="digitBox" id="d2">_</div>
+          <div class="digitBox" id="d3">_</div>
+          <div class="digitBox" id="d4">_</div>
+          <div class="digitBox" id="d5">_</div>
+          <div class="digitBox" id="d6">_</div>
+          <div class="digitBox" id="d7">_</div>
+        </div>
+        <div id="nameDisplay"></div>
+        <div class="controls">
+          <div id="buttonGroup">
+            <button onclick="startSpin()">🎲 Bắt đầu quay</button>
+            <button onclick="revealName()">👤 Họ tên</button>
+            <button onclick="confirmOK()">✔️ OK</button>
+          </div>
+          <div id="secondaryButtons">
+            <button onclick="undoLast()" style="background-color:#ffc107;color:#000;">⏪ Hoàn tác</button>
+            <button onclick="exportResults()">📤 Xuất kết quả</button>
+            <button id="resetBtn" onclick="if(confirm('Bạn có chắc muốn reset không?')) location.reload()">↻ Reset</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="rightPanel" id="resultsContainer"></div>
+  </div>
+  <script>
+    let employees = [], availableEmployees = [], current = null, lastConfirmed = null, roundIndex = 0;
+    const prizeRounds = [
+      { name: "Giải Khuyến khích 1", count: 10, time: 3000 },
+      { name: "Giải Khuyến khích 2", count: 10, time: 3000 },
+      { name: "Giải Khuyến khích 3", count: 10, time: 3000 },
+      { name: "Giải Ba", count: 3, time: 5000 },
+      { name: "Giải Nhì", count: 2, time: 5000 },
+      { name: "Giải Nhất", count: 1, time: 7000 }
+    ];
+    let currentRoundWinners = 0, spinInterval, results = [], roundTables = {};
+
+    document.getElementById("uploadFile").addEventListener("change", function (e) {
+      const reader = new FileReader();
+      reader.onload = function (evt) {
+        const data = new Uint8Array(evt.target.result);
+        const wb = XLSX.read(data, { type: 'array' });
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+        employees = json.filter(r => r['Mã số nhân viên'] && r['Họ tên'])
+          .map(r => ({ code: r['Mã số nhân viên'].toString().padStart(8, '0'), name: r['Họ tên'] }));
+        availableEmployees = [...employees];
+        if (employees.length > 0) {
+          document.getElementById('uploadSection').style.display = 'none';
+          document.getElementById('mainInterface').style.display = 'block';
+          updateStatus();
+        } else {
+          alert('File không chứa dữ liệu hợp lệ.');
+        }
+      };
+      reader.readAsArrayBuffer(e.target.files[0]);
+    });
+
+    function updateStatus() {
+      document.getElementById('statusBar').innerText =
+        `Đang quay: ${prizeRounds[roundIndex].name} | Còn lại: ${availableEmployees.length} người`;
+    }
+
+    function clearSpin() {
+      for (let i = 0; i < 8; i++) {
+        const d = document.getElementById(`d${i}`);
+        d.innerText = '_';
+        d.classList.remove('spinning', 'final');
+      }
+    }
+
+    function startSpin() {
+      if (!availableEmployees.length) return alert('Hết người để quay!');
+      if (current && !confirm(`Bạn có chắc muốn bỏ số ${current.code} và quay lại?`)) return;
+      clearSpin(); current = null;
+      document.getElementById('nameDisplay').innerText = '';
+
+      const round = prizeRounds[roundIndex];
+      if (currentRoundWinners >= round.count) return alert(`Đã quay xong lượt ${round.name}`);
+
+      spinInterval = setInterval(() => {
+        for (let i = 0; i < 8; i++) {
+          const d = document.getElementById(`d${i}`);
+          d.innerText = Math.floor(Math.random() * 10);
+          d.classList.add('spinning');
+          d.classList.remove('final');
+        }
+      }, 80);
+
+      setTimeout(() => {
+        clearInterval(spinInterval);
+        const idx = Math.floor(Math.random() * availableEmployees.length);
+        current = availableEmployees[idx];
+        for (let i = 0; i < 8; i++) {
+          const d = document.getElementById(`d${i}`);
+          d.innerText = current.code[i] || '_';
+          d.classList.remove('spinning');
+          d.classList.add('final');
+        }
+        updateStatus();
+      }, round.time);
+    }
+
+    function revealName() {
+      if (!current) return alert('Chưa có mã số nào được chọn!');
+      document.getElementById('nameDisplay').innerText = `Họ tên: ${current.name}`;
+    }
+
+    function confirmOK() {
+      if (!current) return alert('Chưa có mã số nào để xác nhận!');
+      currentRoundWinners++;
+      lastConfirmed = current;
+      availableEmployees = availableEmployees.filter(e => e.code !== current.code);
+      results.push({ round: prizeRounds[roundIndex].name, name: current.name, code: current.code });
+
+      if (!roundTables[prizeRounds[roundIndex].name]) {
+        const container = document.getElementById("resultsContainer");
+        const section = document.createElement("div");
+        section.className = 'resultGroup';
+        section.innerHTML = `<h2>${prizeRounds[roundIndex].name}</h2><table><thead><tr><th>STT</th><th>Mã số</th><th>Họ tên</th></tr></thead><tbody></tbody></table>`;
+        container.prepend(section);
+        roundTables[prizeRounds[roundIndex].name] = section.querySelector("tbody");
+      }
+
+      const tbody = roundTables[prizeRounds[roundIndex].name];
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${tbody.children.length + 1}</td><td>${current.code}</td><td>${current.name}</td>`;
+      tbody.appendChild(tr);
+
+      current = null;
+      clearSpin();
+      document.getElementById('nameDisplay').innerText = '';
+      updateStatus();
+
+      if (currentRoundWinners >= prizeRounds[roundIndex].count) {
+        alert(`🎉 Đã quay xong lượt ${prizeRounds[roundIndex].name}`);
+        roundIndex++;
+        currentRoundWinners = 0;
+        if (roundIndex < prizeRounds.length) updateStatus();
+        else alert('🎊 Toàn bộ lượt quay đã hoàn tất!');
+      }
+    }
+
+    function undoLast() {
+      if (!lastConfirmed) return alert('Không có dữ liệu để hoàn tác!');
+      availableEmployees.push(lastConfirmed);
+      const roundName = prizeRounds[roundIndex].name;
+      const tbody = roundTables[roundName];
+      if (tbody && tbody.lastChild) tbody.removeChild(tbody.lastChild);
+      results.pop();
+      currentRoundWinners = Math.max(0, currentRoundWinners - 1);
+      lastConfirmed = null;
+      updateStatus();
+    }
+
+    function exportResults() {
+      if (!results.length) return alert('Chưa có kết quả nào để xuất!');
+      const ws = XLSX.utils.json_to_sheet(results);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Kết quả trúng thưởng');
+      XLSX.writeFile(wb, 'ket_qua_trung_thuong.xlsx');
+    }
+  </script>
+</body>
+</html>
